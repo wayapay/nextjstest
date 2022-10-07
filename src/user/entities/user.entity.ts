@@ -1,4 +1,5 @@
 // create user entity
+import { Exclude } from 'class-transformer';
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('users')
@@ -12,6 +13,7 @@ export class User {
   @Column({ type: 'varchar', length: 200 })
   email: string;
 
+  @Exclude()
   @Column({ type: 'varchar', length: 200 })
   password: string;
 
@@ -20,4 +22,8 @@ export class User {
     default: () => 'CURRENT_TIMESTAMP',
   })
   created_at: Date;
+
+  // constructor(partial: Partial<User>) {
+  //   Object.assign(this, partial);
+  // }
 }

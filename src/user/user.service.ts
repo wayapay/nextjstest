@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Observable } from 'rxjs';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { userInterface } from './user.interface';
@@ -10,6 +10,7 @@ import { userInterface } from './user.interface';
 export class UserService {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
+    private dataSource: DataSource,
   ) {}
   create(userInterface: userInterface) {
     // get user data
@@ -37,5 +38,26 @@ export class UserService {
 
   async remove(id: number): Promise<void> {
     await this.userRepository.delete(id);
+  }
+  // create many users once
+  async createMany(users: userInterface[]) {
+    // use queryRunner to create many users
+    // https://typeorm.io/#/query-runner/using-query-runner
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      users.forEach((user) => {
+        const date = new Date();
+        user.created_at = date;
+        const userEntity = Object.assign(new User(), user);
+        queryRunner.manager.save(userEntity);
+      });
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+    } finally {
+      await queryRunner.release();
+    }
   }
 }
